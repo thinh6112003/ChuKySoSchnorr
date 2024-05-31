@@ -316,8 +316,8 @@ namespace ChuKySoSchnorr
             //BigInteger v1 = (gu1 * yu2) % p;
             //BigInteger v2 = r % p;
 
-            txtCheckResult.Text = "v1: " + ev + ", v2: " + hm;
-            return;
+            //txtCheckResult.Text = "v1: " + ev + ", v2: " + hm;
+            //return;
 
             if (ev == hm)
             {
