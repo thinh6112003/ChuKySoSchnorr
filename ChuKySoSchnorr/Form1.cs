@@ -181,7 +181,7 @@ namespace ChuKySoSchnorr
             }
             return ordList;
         }
-
+    
         private static string SHA256_String(string s)
         {
             var byteString = Encoding.UTF8.GetBytes("key");
@@ -260,7 +260,8 @@ namespace ChuKySoSchnorr
 
             if (validate(p, q, g, x))
             {
-                txtY.Text = Convert.ToString(Math.Pow(g, x) % p);
+                //txtY.Text = Convert.ToString(Math.Pow(g, x) % p);
+                txtY.Text = BigInteger.ModPow(g, x, p).ToString();
             }
 
         }
@@ -269,7 +270,7 @@ namespace ChuKySoSchnorr
         {
             int p = int.Parse(txtP.Text);
             int g = int.Parse(txtG.Text);
-            int q = int.Parse(txtP.Text);
+            int q = int.Parse(txtQ.Text);
             int x = int.Parse(txtX.Text);
 
             BigInteger hm = SHA256_Hex(txtMGenerate.Text);
@@ -280,9 +281,9 @@ namespace ChuKySoSchnorr
             {
                 txtKSign.Text = Convert.ToString(k);
             }
-            BigInteger r = BigInteger.ModPow(g, x, p);
+            BigInteger r = BigInteger.ModPow(g, k, p);
             txtRSign.Text = Convert.ToString(r);
-            BigInteger s = (k - x * r * hm) % q;
+            BigInteger s = (k - x * (1/r) * hm) % q;
             if (s < 0)
             {
                 s += q;  // Điều chỉnh để đảm bảo s không âm
@@ -291,7 +292,17 @@ namespace ChuKySoSchnorr
             txtSign.Text = "(" + r + ", " + s + ")";
             txtMCheck.Text = txtMGenerate.Text;
         }
-
+        private int modInverse(int A, int M)
+        {
+            if(gcd(A, M) == 1)
+            {
+                for (int X = 1; X < M; X++)
+                    if (((A % M) * (X % M)) % M == 1)
+                        return X;
+            }
+            errorMsg.Text = "r va q phai la 2 so nguyen to cung nhau !";
+            return 0;
+        }
         private void btnCheck_Click(object sender, EventArgs e)
         {
             int p = int.Parse(txtP.Text);
@@ -304,8 +315,8 @@ namespace ChuKySoSchnorr
             int x = int.Parse(txtX.Text);
 
             BigInteger hm = SHA256_Hex(txtMGenerate.Text);
-            BigInteger gs = (BigInteger.ModPow(g, s, p) * BigInteger.ModPow(y, hm, p)) % p;
-            BigInteger ev = SHA256_Hex(gs.ToString());
+            //BigInteger gs = (BigInteger.ModPow(g, s, p) * BigInteger.ModPow(y, hm, p)) % p;
+            //BigInteger ev = SHA256_Hex(gs.ToString());
 
             //BigInteger u1 = s;
             //BigInteger u2 = hm;
@@ -316,10 +327,19 @@ namespace ChuKySoSchnorr
             //BigInteger v1 = (gu1 * yu2) % p;
             //BigInteger v2 = r % p;
 
-            //txtCheckResult.Text = "v1: " + ev + ", v2: " + hm;
-            //return;
+            //double u1 = (s * (1 / r)) % q;
+            //double u2 = (double)((hm * (1 / r)) % q);
 
-            if (ev == hm)
+            //double v = (Math.Pow(g, u1) * Math.Pow(y, u2)) % q;
+
+            BigInteger u1 = ((s % q) * modInverse(r, q)) % q;
+            BigInteger u2 = ((hm % q) * modInverse(r, q)) % q;
+            BigInteger v = (BigInteger.ModPow(g, u1, p) * BigInteger.ModPow(y, u2, p)) % p;
+
+            //txtCheckResult.Text = "v: " + v + ", r: " + r;
+            //return;
+            
+            if (v == r)
             {
                 txtCheckResult.Text = "Chữ ký hợp lệ :))";
             }
