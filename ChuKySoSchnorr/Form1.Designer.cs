@@ -145,7 +145,7 @@
             btnGeneratePublicKey.Name = "btnGeneratePublicKey";
             btnGeneratePublicKey.Size = new Size(113, 46);
             btnGeneratePublicKey.TabIndex = 9;
-            btnGeneratePublicKey.Text = "Generate";
+            btnGeneratePublicKey.Text = "Tạo";
             btnGeneratePublicKey.UseVisualStyleBackColor = false;
             btnGeneratePublicKey.Click += button1_Click;
             // 
@@ -287,6 +287,7 @@
             button3.TabIndex = 27;
             button3.Text = "Chọn file";
             button3.UseVisualStyleBackColor = false;
+            button3.Click += button3_Click;
             // 
             // label8
             // 
@@ -369,7 +370,7 @@
             btnSign.Name = "btnSign";
             btnSign.Size = new Size(113, 46);
             btnSign.TabIndex = 22;
-            btnSign.Text = "Sign";
+            btnSign.Text = "Tạo";
             btnSign.UseVisualStyleBackColor = false;
             btnSign.Click += button2_Click;
             // 
@@ -423,7 +424,7 @@
             btnCheck.Name = "btnCheck";
             btnCheck.Size = new Size(113, 46);
             btnCheck.TabIndex = 28;
-            btnCheck.Text = "Check";
+            btnCheck.Text = "Kiểm tra";
             btnCheck.UseVisualStyleBackColor = false;
             btnCheck.Click += btnCheck_Click;
             // 
@@ -476,6 +477,7 @@
             button4.TabIndex = 30;
             button4.Text = "Chọn file";
             button4.UseVisualStyleBackColor = false;
+            button4.Click += button4_Click;
             // 
             // label17
             // 
@@ -524,7 +526,7 @@
             Controls.Add(panel1);
             Name = "Form1";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Schnorr Sign";
+            Text = "Chữ ký Schnorr";
             Load += Form1_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();

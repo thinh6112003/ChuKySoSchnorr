@@ -5,6 +5,11 @@ using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Text;
 using System.Windows.Forms;
+using Xceed.Words.NET;
+using PdfiumViewer;
+using PdfSharp_gdi = PdfSharp.Pdf;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
 
 namespace ChuKySoSchnorr
 {
@@ -105,8 +110,8 @@ namespace ChuKySoSchnorr
         private List<int> PrimitiveRootCheck(int mod)
         {
             List<OrdInfo> orderList = getOrderList(mod);
-            int fi = phi(mod);
-            int pr = phi(fi);
+            //int fi = phi(mod);
+            //int pr = phi(fi);
             List<int> primitiveRoots = findPrimitiveRoots(orderList);
 
             return primitiveRoots;
@@ -181,7 +186,7 @@ namespace ChuKySoSchnorr
             }
             return ordList;
         }
-    
+
         private static string SHA256_String(string s)
         {
             var byteString = Encoding.UTF8.GetBytes("key");
@@ -220,18 +225,42 @@ namespace ChuKySoSchnorr
             }
             return array;
         }
+        private static bool IsPrime(int n)
+        {
+            if (n <= 1)
+                return false;
 
+            if (n == 2)
+                return true; // 2 là số nguyên tố duy nhất
+
+            if (n % 2 == 0)
+                return false; // Các số chẵn (ngoại trừ 2) không phải là số nguyên tố
+
+            // Kiểm tra từ 3 đến căn bậc hai của n
+            for (int i = 3; i * i <= n; i += 2)
+            {
+                if (n % i == 0)
+                    return false; // Nếu n chia hết cho i thì không phải số nguyên tố
+            }
+
+            return true;
+        }
         private bool validate(int p, int q, int g, int x)
         {
             // uoc cua p
             string divisor = "";
-            divisor = String.Join(",", findDivisor(p - 1));
+            divisor = System.String.Join(",", findDivisor(p - 1));
             List<int> divisor_list = findDivisor(p - 1);
 
             // nguyen thuy cua p
             string primitive = "";
-            primitive = String.Join(", ", PrimitiveRootCheck(p));
-            if (!divisor_list.Contains(q))
+            primitive = System.String.Join(", ", PrimitiveRootCheck(p));
+            if (!IsPrime(p))
+            {
+                errorMsg.Text = "p phải là số nguyên tố";
+                return false;
+            }
+            else if (!divisor_list.Contains(q))
             {
                 errorMsg.Text = "q phải là ước của " + (p - 1) + " gồm {" + divisor + "}";
                 return false;
@@ -253,99 +282,177 @@ namespace ChuKySoSchnorr
 
         private void button1_Click(object sender, EventArgs e)
         {
-            int p = int.Parse(txtP.Text);
-            int q = int.Parse(txtQ.Text);
-            int g = int.Parse(txtG.Text);
-            int x = int.Parse(txtX.Text);
-
-            if (validate(p, q, g, x))
+            try
             {
-                //txtY.Text = Convert.ToString(Math.Pow(g, x) % p);
-                txtY.Text = BigInteger.ModPow(g, x, p).ToString();
+                int p = int.Parse(txtP.Text);
+                int q = int.Parse(txtQ.Text);
+                int g = int.Parse(txtG.Text);
+                int x = int.Parse(txtX.Text);
+
+                if (validate(p, q, g, x))
+                {
+                    //txtY.Text = Convert.ToString(Math.Pow(g, x) % p);
+                    txtY.Text = BigInteger.ModPow(g, x, p).ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMsg.Text = ex.Message;
             }
 
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            int p = int.Parse(txtP.Text);
-            int g = int.Parse(txtG.Text);
-            int q = int.Parse(txtQ.Text);
-            int x = int.Parse(txtX.Text);
-
-            BigInteger hm = SHA256_Hex(txtMGenerate.Text);
-
-            Random random = new Random();
-            int k = random.Next((q - 1) - 2 + 1) + 2;
-            if (txtP.Text != "")
+            try
             {
-                txtKSign.Text = Convert.ToString(k);
+                int p = int.Parse(txtP.Text);
+                int g = int.Parse(txtG.Text);
+                int q = int.Parse(txtQ.Text);
+                int x = int.Parse(txtX.Text);
+
+                BigInteger hm = SHA256_Hex(txtMGenerate.Text);
+
+                Random random = new Random();
+                int k = random.Next((q - 1) - 2 + 1) + 2;
+                if (txtP.Text != "")
+                {
+                    txtKSign.Text = Convert.ToString(k);
+                }
+                BigInteger r = BigInteger.ModPow(g, k, p);
+                txtRSign.Text = Convert.ToString(r);
+                BigInteger s = (k - x * (1 / r) * hm) % q;
+                if (s < 0)
+                {
+                    s += q;  // Điều chỉnh để đảm bảo s không âm
+                }
+                txtSSign.Text = Convert.ToString(s);
+                txtSign.Text = "(" + r + ", " + s + ")";
+                txtMCheck.Text = txtMGenerate.Text;
             }
-            BigInteger r = BigInteger.ModPow(g, k, p);
-            txtRSign.Text = Convert.ToString(r);
-            BigInteger s = (k - x * (1/r) * hm) % q;
-            if (s < 0)
+            catch (Exception ex)
             {
-                s += q;  // Điều chỉnh để đảm bảo s không âm
+                errorMsg.Text = ex.Message;
             }
-            txtSSign.Text = Convert.ToString(s);
-            txtSign.Text = "(" + r + ", " + s + ")";
-            txtMCheck.Text = txtMGenerate.Text;
         }
         private int modInverse(int A, int M)
         {
-            if(gcd(A, M) == 1)
+            if (gcd(A, M) == 1)
             {
                 for (int X = 1; X < M; X++)
                     if (((A % M) * (X % M)) % M == 1)
                         return X;
             }
-            errorMsg.Text = "r va q phai la 2 so nguyen to cung nhau !";
+            //errorMsg.Text = "r va q phai la 2 so nguyen to cung nhau !";
             return 0;
         }
         private void btnCheck_Click(object sender, EventArgs e)
         {
-            int p = int.Parse(txtP.Text);
-            int r = int.Parse(txtRCheck.Text);
-            int s = int.Parse(txtSCheck.Text);
-            int q = int.Parse(txtQ.Text);
-            int g = int.Parse(txtG.Text);
-            int y = int.Parse(txtY.Text);
-            int k = int.Parse(txtKSign.Text);
-            int x = int.Parse(txtX.Text);
-
-            BigInteger hm = SHA256_Hex(txtMGenerate.Text);
-            //BigInteger gs = (BigInteger.ModPow(g, s, p) * BigInteger.ModPow(y, hm, p)) % p;
-            //BigInteger ev = SHA256_Hex(gs.ToString());
-
-            //BigInteger u1 = s;
-            //BigInteger u2 = hm;
-
-            //BigInteger gu1 = BigInteger.ModPow(g, u1, p);
-            //BigInteger yu2 = BigInteger.ModPow(y, u2, p);
-
-            //BigInteger v1 = (gu1 * yu2) % p;
-            //BigInteger v2 = r % p;
-
-            //double u1 = (s * (1 / r)) % q;
-            //double u2 = (double)((hm * (1 / r)) % q);
-
-            //double v = (Math.Pow(g, u1) * Math.Pow(y, u2)) % q;
-
-            BigInteger u1 = ((s % q) * modInverse(r, q)) % q;
-            BigInteger u2 = ((hm % q) * modInverse(r, q)) % q;
-            BigInteger v = (BigInteger.ModPow(g, u1, p) * BigInteger.ModPow(y, u2, p)) % p;
-
-            //txtCheckResult.Text = "v: " + v + ", r: " + r;
-            //return;
-            
-            if (v == r)
+            try
             {
-                txtCheckResult.Text = "Chữ ký hợp lệ :))";
+                int p = int.Parse(txtP.Text);
+                int r = int.Parse(txtRCheck.Text);
+                int s = int.Parse(txtSCheck.Text);
+                int q = int.Parse(txtQ.Text);
+                int g = int.Parse(txtG.Text);
+                int y = int.Parse(txtY.Text);
+                int k = int.Parse(txtKSign.Text);
+                int x = int.Parse(txtX.Text);
+
+                BigInteger hm = SHA256_Hex(txtMGenerate.Text);
+                //BigInteger gs = (BigInteger.ModPow(g, s, p) * BigInteger.ModPow(y, hm, p)) % p;
+                //BigInteger ev = SHA256_Hex(gs.ToString());
+
+                //BigInteger u1 = s;
+                //BigInteger u2 = hm;
+
+                //BigInteger gu1 = BigInteger.ModPow(g, u1, p);
+                //BigInteger yu2 = BigInteger.ModPow(y, u2, p);
+
+                //BigInteger v1 = (gu1 * yu2) % p;
+                //BigInteger v2 = r % p;
+
+                //double u1 = (s * (1 / r)) % q;
+                //double u2 = (double)((hm * (1 / r)) % q);
+
+                //double v = (Math.Pow(g, u1) * Math.Pow(y, u2)) % q;
+
+                BigInteger u1 = ((s % q) * modInverse(r, q)) % q;
+                BigInteger u2 = ((hm % q) * modInverse(r, q)) % q;
+                BigInteger v = (BigInteger.ModPow(g, u1, p) * BigInteger.ModPow(y, u2, p)) % p;
+
+                //txtCheckResult.Text = "v: " + v + ", r: " + r;
+                //return;
+
+                if (v == r)
+                {
+                    txtCheckResult.Text = "Chữ ký hợp lệ :))";
+                }
+                else
+                {
+                    txtCheckResult.Text = "Chữ ký giả mạo :))";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                txtCheckResult.Text = "Chữ ký giả mạo :))";
+                errorMsg.Text = ex.Message;
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                //Filter = "Text Files (*.txt)|*.txt|Word Documents (*.docx)|*.docx",
+                Title = "Open Text or Word File"
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                string fileContent = string.Empty;
+
+                if (Path.GetExtension(filePath).ToLower() == ".txt")
+                {
+                    fileContent = File.ReadAllText(filePath);
+                }
+                else if (Path.GetExtension(filePath).ToLower() == ".docx")
+                {
+                    using (DocX document = DocX.Load(filePath))
+                    {
+                        fileContent = document.Text;
+                    }
+                }
+                txtMGenerate.Text = fileContent;
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                //Filter = "Text Files (*.txt)|*.txt|Word Documents (*.docx)|*.docx",
+                Title = "Open Text or Word File"
+            };
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = openFileDialog.FileName;
+                string fileContent = string.Empty;
+
+                string extension = Path.GetExtension(filePath).ToLower();
+                if (extension == ".txt")
+                {
+                    fileContent = File.ReadAllText(filePath);
+                }
+                else if (extension == ".docx")
+                {
+                    using (DocX document = DocX.Load(filePath))
+                    {
+                        fileContent = document.Text;
+                    }
+                }
+                txtMCheck.Text = fileContent;
             }
         }
     }
